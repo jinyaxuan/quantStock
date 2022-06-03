@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="78bcf314-9857-4257-9e34-cbddbcc886c6" name="变更" comment="添加买卖记录" />
+    <list default="true" id="78bcf314-9857-4257-9e34-cbddbcc886c6" name="变更" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,6 +13,7 @@
         <option value="dong &lt;727777477@qq.com&gt;" />
       </list>
     </option>
+    <option name="PUSH_AUTO_UPDATE" value="true" />
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
         <entry key="$PROJECT_DIR$" value="main" />
@@ -84,7 +85,7 @@
       <option name="presentableId" value="Default" />
       <updated>1654221633453</updated>
       <workItem from="1654221635296" duration="1864000" />
-      <workItem from="1654224140865" duration="196000" />
+      <workItem from="1654224140865" duration="328000" />
     </task>
     <task id="LOCAL-00001" summary="添加买卖记录">
       <created>1654222360789</created>
@@ -100,7 +101,14 @@
       <option name="project" value="LOCAL" />
       <updated>1654223844781</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="添加买卖记录">
+      <created>1654224377834</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1654224377834</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
