@@ -10,10 +10,13 @@ import datetime
 # 策略中必须有init方法
 def init(context):
 
-    algo_1(context)
+    # algo_1(context)
 
-    schedule(schedule_func=algo_1, date_rule='1d', time_rule='9:25:30')
-    schedule(schedule_func=algo_2, date_rule='1d', time_rule='14:56:30')
+    context.nuclear_button = 1
+    add_parameter(key='nuclear_button', value=context.nuclear_button, min=0, max=1, name='核按钮', intro='核按钮开关',
+                  group='打板', readonly=False)
+
+    schedule(schedule_func=algo_1, date_rule='1d', time_rule='9:30:00')
     
 def algo_2(context):
 
@@ -37,22 +40,23 @@ def algo_1(context):
     for Account_position in Account_positions:
         context.stocks.append(Account_position['symbol'])
         context.avgs[Account_position['symbol']] = 0
-    
 
-    context.history_data = history(symbol=context.stocks, frequency='1d', start_time=last_day,  end_time=last_day, fields='symbol, close', adjust=ADJUST_PREV, df= True)
+    context.history_data = history(symbol=context.stocks, frequency='1d', start_time=last_day, end_time=last_day,
+                                   fields='symbol, close', adjust=ADJUST_PREV, df=True)
     context.instrument = get_instruments(symbols=context.stocks, df=True, fields='symbol, lower_limit')
- 
-    subscribe(context.stocks, frequency='300s', count=context.count, wait_group=False, wait_group_timeout='10s', unsubscribe_previous=False)
-    subscribe(context.stocks, frequency='tick', count=context.count, wait_group=False, wait_group_timeout='10s', unsubscribe_previous=False)
+
+    subscribe(context.stocks, frequency='300s', count=context.count, wait_group=False, wait_group_timeout='10s',
+              unsubscribe_previous=False)
+    subscribe(context.stocks, frequency='tick', count=context.count, wait_group=False, wait_group_timeout='10s',
+              unsubscribe_previous=False)
 
     log(level='info', msg='目前持仓:{}'.format(context.stocks), source='strategy')
 
+    schedule(schedule_func=algo_2, date_rule='1d', time_rule='14:56:30')
+
 
 def on_bar(context, bars):
-
-
     for bar in bars:
-
         # 获取通过subscribe订阅的数据
         prices = context.data(bar.symbol, '300s', context.count, fields='close')
 
@@ -74,32 +78,44 @@ def on_tick(context, tick):
 
     if pos and pos.available_now > 0:  # 有持仓就跌停价卖出股票。
 
-        if pos.price / pos.vwap < 0.7:
-            
-            order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
-            log(level='info', msg='{}, 止损了'.format(tick.symbol), source='strategy')
-            
-        elif pos.price / high < 0.98:
+        # if pos.price / pos.vwap < 0.7:
 
-            order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
-            log(level='info', msg='{}, 回落止盈了'.format(tick.symbol), source='strategy')
-        
-        elif pos.price < context.avgs[tick.symbol]:
+        #     order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
+        #     log(level='info', msg='{}, 止损了'.format(tick.symbol), source='strategy')
 
-            order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
-            log(level='info', msg='{}, 破均线了'.format(tick.symbol), source='strategy')
-        
-        elif (pos.price / tick.low >= 1.06 and tick.low >= close) or (pos.price / tick.low >= 1.045 and tick.low < close):
+        # elif high != 0:
 
-            order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
-            log(level='info', msg='{}, 冲高止盈了'.format(tick.symbol), source='strategy')
-        
+        #     if pos.price / high < 0.98:
+
+        #         order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
+        #         log(level='info', msg='{}, 回落止盈了'.format(tick.symbol), source='strategy')
+
+        # if pos.price < context.avgs[tick.symbol]:
+
+        #     order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
+        #     log(level='info', msg='{}, 破均线了'.format(tick.symbol), source='strategy')
+
+        if pos.price < tick.open * 0.98 and pos.price < low_limit * 1.005 and context.nuclear_button == 1:
+
+            order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell, order_type=OrderType_Limit,
+                         position_effect=PositionEffect_Close, price=low_limit)
+            log(level='info', msg='{}, 止损'.format(tick.symbol), source='strategy')
+
+        elif tick.low != 0:
+
+            if (pos.price / tick.low >= 1.06 and tick.low >= close) or (
+                    pos.price / tick.low >= 1.045 and tick.low < close):
+                order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell,
+                             order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
+                log(level='info', msg='{}, 冲高止盈了'.format(tick.symbol), source='strategy')
+
         elif tick.quotes[0]['bid_v'] * tick.quotes[0]['bid_p'] < 10000000 and tick.quotes[0]['ask_p'] == 0:
-        
-            order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
+
+            order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell, order_type=OrderType_Limit,
+                         position_effect=PositionEffect_Close, price=low_limit)
             log(level='info', msg='{}, 炸板了'.format(tick.symbol), source='strategy')
 
-        elif now == datetime.time(14,55,00) and tick.quotes[0]['ask_p'] != 0:
+        elif now == datetime.time(14, 55, 00) and tick.quotes[0]['ask_p'] != 0:
 
             order_volume(symbol=tick.symbol, volume=pos.available_now, side=OrderSide_Sell , order_type=OrderType_Limit, position_effect=PositionEffect_Close, price=low_limit)
             log(level='info', msg='{}, 到点清仓了'.format(tick.symbol), source='strategy')
@@ -111,14 +127,23 @@ def on_tick(context, tick):
         unsubscribe(symbols=tick.symbol, frequency='tick')
         log(level='info', msg='{}, 没可交易票数, 取消订阅了'.format(tick.symbol), source='strategy')
 
-def on_execution_report(context, execrpt):
 
+def on_execution_report(context, execrpt):
     # unsubscribe(symbols=execrpt.symbol, frequency='300s')
     # unsubscribe(symbols=execrpt.symbol, frequency='tick')
 
     log(level='info', msg='{}, 交易成功'.format(execrpt.symbol), source='strategy')
     log(level='info', msg='回执信息:{}'.format(execrpt), source='strategy')
 
+
+def on_parameter(context, parameter):
+    if parameter['name'] == '核按钮' and parameter['value'] != context.nuclear_button:
+        nuclear = {0: '关闭', 1: '启动'}
+
+        context.nuclear_button = parameter['value']
+        set_parameter(key='nuclear_button', value=context.nuclear_button, min=0, max=1, name='核按钮', intro='核按钮开关',
+                      group='打板', readonly=False)
+        log(level='info', msg='核按钮:{}'.format(nuclear[context.nuclear_button]), source='strategy')
 
 
 def on_error(context, code, info):

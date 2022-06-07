@@ -38,7 +38,8 @@ def Get_stock(stocks, black_stock):
     return stocks
 
 def frash_first_stock():
-    url = 'https://api.heheapp.com/api/users_spool_weicai?name=pool-1&' + urlencode({"query":"10个交易日的区间平均成交额>4亿元，1天前未张停，2天前未涨停，非创业板，上个交易日ma3大于ma10，前10日涨幅小于50，竞价涨幅小于7%"})
+    url = 'https://api.heheapp.com/api/users_spool_weicai?name=pool-1&' + urlencode(
+        {"query": "10个交易日的区间平均成交额>4亿元，1天前未张停，2天前未涨停，非创业板，上个交易日ma3大于ma10，前10日涨幅小于50，竞价涨幅小于7%，价格小于70"})
     res = requests.put(headers=headers, url=url)
     res.enconding = "utf-8"
     suc = json.loads(res.text)
@@ -97,30 +98,34 @@ def frash_black_stock():
         log(level='info', msg='黑名单刷新成功！', source='strategy')
 
 
-
-# 策略中必须有init方法
-def init(context):
-   
-    algo_1(context) 
-
+def get_button(context):
     context.daily_limit = 15000000
     context.kill_an_order = 12000000
-    add_parameter(key='daily_limit', value=context.daily_limit, min=0, max=99999999999, name='封单金额', intro='调整封单', group='打板', readonly=False)
-    add_parameter(key='kill_an_order', value=context.kill_an_order, min=0, max=99999999999, name='撤单金额', intro='调整撤单', group='打板', readonly=False)
+    add_parameter(key='daily_limit', value=context.daily_limit, min=0, max=99999999999, name='封单金额', intro='调整封单',
+                  group='打板', readonly=False)
+    add_parameter(key='kill_an_order', value=context.kill_an_order, min=0, max=99999999999, name='撤单金额', intro='调整撤单',
+                  group='打板', readonly=False)
 
     context.retery = 2000000
     context.deal_time = 4
-    add_parameter(key='retery', value=context.retery, min=0, max=99999999999, name='一字板回封金额', intro='调整金额', group='打板', readonly=False)
-    add_parameter(key='deal_time', value=context.deal_time, min=0, max=10, name='排撤次数', intro='调整次数', group='打板', readonly=False)
+    add_parameter(key='retery', value=context.retery, min=0, max=99999999999, name='一字板回封金额', intro='调整金额', group='打板',
+                  readonly=False)
+    add_parameter(key='deal_time', value=context.deal_time, min=0, max=10, name='排撤次数', intro='调整次数', group='打板',
+                  readonly=False)
 
     context.frash_stock = 0
-    add_parameter(key='frash_stock', value=context.frash_stock, min=0, max=10, name='刷新股池', intro='刷新股池', group='刷新', readonly=False)
+    add_parameter(key='frash_stock', value=context.frash_stock, min=0, max=10, name='刷新股池', intro='刷新股池', group='刷新',
+                  readonly=False)
+
+
+# 策略中必须有init方法
+def init(context):
+    # algo_1(context)
 
     schedule(schedule_func=algo_1, date_rule='1d', time_rule='9:25:30')
-    schedule(schedule_func=algo_2, date_rule='1d', time_rule='14:56:50')
+
 
 def algo_1(context):
-
     context.Account_positions = [i.symbol for i in context.account().positions()]
 
     context.black_stock = []
@@ -141,7 +146,13 @@ def algo_1(context):
 
     context.instrument = get_instruments(symbols=context.stocks, df=True, fields='symbol, upper_limit')
     context.instrument['deal'] = 0
-    subscribe(symbols=context.stocks, frequency='tick', count=5, wait_group=True, wait_group_timeout='6s', unsubscribe_previous=True)
+
+    get_button(context)
+
+    subscribe(symbols=context.stocks, frequency='tick', count=5, wait_group=True, wait_group_timeout='6s',
+              unsubscribe_previous=True)
+
+    schedule(schedule_func=algo_2, date_rule='1d', time_rule='14:56:50')
 
 def algo_2(context):
     
@@ -165,9 +176,12 @@ def on_tick(context, tick):
         log(level='info', msg='{}, 下单了'.format(tick.symbol), source='strategy')
 
     #回封下单
-    elif tick.open == upper_limit and tick.low != upper_limit and tick.quotes[0]['bid_v'] * tick.quotes[0]['bid_p'] > context.retery and deal <= context.deal_time and tick.symbol not in context.unfinished_orders:
-        
-        order_percent(symbol=tick.symbol, percent=0.15, side=OrderSide_Buy, order_type=OrderType_Limit, position_effect=PositionEffect_Open, price=upper_limit)
+    elif tick.open == upper_limit and tick.low != upper_limit and tick.quotes[0]['ask_p'] == 0 and tick.quotes[0][
+        'bid_v'] * tick.quotes[0][
+        'bid_p'] > context.retery and deal <= context.deal_time and tick.symbol not in context.unfinished_orders:
+
+        order_percent(symbol=tick.symbol, percent=0.15, side=OrderSide_Buy, order_type=OrderType_Limit,
+                      position_effect=PositionEffect_Open, price=upper_limit)
         log(level='info', msg='{}, 下单了'.format(tick.symbol), source='strategy')
 
     #撤单
