@@ -6,6 +6,7 @@ import requests
 import json
 import re
 from urllib.parse import urlencode
+import datetime
 
 headers ={
         "Accept": "application/json, text/plain, */*",
@@ -39,7 +40,7 @@ def Get_stock(stocks, black_stock):
 
 def frash_first_stock():
     url = 'https://api.heheapp.com/api/users_spool_weicai?name=pool-1&' + urlencode(
-        {"query": "10个交易日的区间平均成交额>4亿元，1天前未张停，2天前未涨停，非创业板，上个交易日ma3大于ma10，前10日涨幅小于50，竞价涨幅小于7%，价格小于70"})
+        {"query": "10个交易日的区间平均成交额>3亿元，上个交易日未张停，上上个交易日未涨停，非创业板，上个交易日ma3大于ma10，近20日涨幅小于50，竞价涨幅小于7%，价格小于70"})
     res = requests.put(headers=headers, url=url)
     res.enconding = "utf-8"
     suc = json.loads(res.text)
@@ -65,7 +66,7 @@ def get_more_stock(more_stocks, black_stock):
     return more_stocks
 
 def frash_more_stock():
-    url = 'https://api.heheapp.com/api/users_spool_weicai?name=default&' + urlencode({"query":"上个交易日ma3角度大于60，上个交易日ma30角度大于10，上个交易日ma5大于ma30，主板，非st，上个交易日涨停，上个交易日封板金额大于3000万，今日9:25竞价额/上个交易日总成交额大于0.028，今日涨停价大于压力位，非60开头，上个交易日下午开板次数小于3，业绩为正,热度排名前5"})
+    url = 'https://api.heheapp.com/api/users_spool_weicai?name=default&' + urlencode({"query":"上个交易日ma3角度大于60，上个交易日ma30角度大于10，上个交易日ma5大于ma30，主板，非st，上个交易日涨停，上个交易日封板金额大于3000万，今日9:25竞价额/上个交易日总成交额大于0.028，今日涨停价大于压力位，非60开头，上个交易日下午开板次数小于3，业绩为正，概念龙头数>=1"})
     res = requests.put(headers=headers, url=url)
     res.enconding = "utf-8"
     suc = json.loads(res.text)
@@ -90,7 +91,7 @@ def get_black_stock(black_stock):
 
 def frash_black_stock():
     # url = 'https://api.heheapp.com/api/users_black_list?' + urlencode({"query":"煤炭||证券||银行||融资方式包含可转债"})
-    url = 'https://api.heheapp.com/api/users_black_list?' + urlencode({"query":"10个交易日的区间日均换手率>30%||上市天数>30日取反"})
+    url = 'https://api.heheapp.com/api/users_black_list_weicai?' + urlencode({"query":"10个交易日的区间日均换手率>30%||上市天数>30日取反"})
     res = requests.put(headers=headers, url=url)
     res.enconding = "utf-8"
     suc = json.loads(res.text)
@@ -108,21 +109,25 @@ def get_button(context):
 
     context.retery = 2000000
     context.deal_time = 4
+    context.proportion_amount = 0.06
     add_parameter(key='retery', value=context.retery, min=0, max=99999999999, name='一字板回封金额', intro='调整金额', group='打板',
                   readonly=False)
     add_parameter(key='deal_time', value=context.deal_time, min=0, max=10, name='排撤次数', intro='调整次数', group='打板',
                   readonly=False)
+    add_parameter(key='proportion_amount', value=context.proportion_amount, min=0, max=1, name='瞬时成交占比', intro='调整占比', group='打板',
+            readonly=False)
 
     context.frash_stock = 0
     add_parameter(key='frash_stock', value=context.frash_stock, min=0, max=10, name='刷新股池', intro='刷新股池', group='刷新',
                   readonly=False)
 
 
+
 # 策略中必须有init方法
 def init(context):
-    # algo_1(context)
+    algo_1(context)
 
-    schedule(schedule_func=algo_1, date_rule='1d', time_rule='9:25:30')
+    # schedule(schedule_func=algo_1, date_rule='1d', time_rule='9:30:00')
 
 
 def algo_1(context):
@@ -131,23 +136,32 @@ def algo_1(context):
     context.black_stock = []
     context.stocks = []
     context.more_stocks = []
+    context.max_amount = {}
+    context.last_vol = {}
 
     while not context.black_stock:
-        frash_black_stock()
+        # frash_black_stock()
         context.black_stock = get_black_stock(context.black_stock)
 
     while not context.stocks:
-        frash_first_stock()
+        # frash_first_stock()
         context.stocks = Get_stock(context.stocks, context.black_stock)
 
-    while not context.more_stocks:
-        frash_more_stock()
-        context.more_stocks = get_more_stock(context.more_stocks, context.black_stock)
+    # while not context.more_stocks:
+    #     frash_more_stock()
+    #     context.more_stocks = get_more_stock(context.more_stocks, context.black_stock)
 
     context.instrument = get_instruments(symbols=context.stocks, df=True, fields='symbol, upper_limit')
     context.instrument['deal'] = 0
 
     get_button(context)
+
+    for stock in context.stocks:
+        end_date = datetime.date.today()
+        history_n_data = history_n(symbol=stock, frequency='1d', count=100, end_time=end_date, fields='symbol, amount', adjust=ADJUST_PREV, df=True)
+        data = history_n_data[history_n_data.groupby(['symbol'])['amount'].rank(method="first", ascending=False)==1]
+        symbol, amount = data['symbol'].iloc[0], data['amount'].iloc[0]
+        context.max_amount[symbol] = amount
 
     subscribe(symbols=context.stocks, frequency='tick', count=5, wait_group=True, wait_group_timeout='6s',
               unsubscribe_previous=True)
@@ -170,8 +184,9 @@ def on_tick(context, tick):
     # try:
 
     #打板下单
-    if tick.quotes[0]['ask_p'] == 0 and tick.quotes[0]['bid_v'] * tick.quotes[0]['bid_p'] > context.daily_limit and tick.symbol not in context.unfinished_orders and tick.open != upper_limit and deal <= context.deal_time:
-
+    # if (tick.quotes[0]['ask_p'] == 0 and tick.quotes[0]['bid_v'] * tick.quotes[0]['bid_p'] > context.daily_limit and tick.symbol not in context.unfinished_orders and tick.open != upper_limit and deal <= context.deal_time) or (tick.quotes[0]['ask_p'] == 0 and tick.last_amount >= context.max_amount[tick.symbol] * context.proportion_amount and tick.symbol not in context.unfinished_orders and tick.open != upper_limit and deal <= context.deal_time):
+    # if tick.last_amount >= context.max_amount[tick.symbol] * context.proportion_amount and tick.symbol not in context.unfinished_orders and tick.open != upper_limit and deal <= context.deal_time:
+    if (tick.quotes[1]['ask_p'] == 0 and tick.price == tick.quotes[0]['ask_p']
         order_percent(symbol=tick.symbol, percent=0.15, side=OrderSide_Buy, order_type=OrderType_Limit, position_effect=PositionEffect_Open, price=upper_limit)
         log(level='info', msg='{}, 下单了'.format(tick.symbol), source='strategy')
 
@@ -185,16 +200,24 @@ def on_tick(context, tick):
         log(level='info', msg='{}, 下单了'.format(tick.symbol), source='strategy')
 
     #撤单
-    if tick.quotes[0]['bid_v'] != 0:
-        if (tick.last_volume / (tick.last_volume + tick.quotes[0]['bid_v']) > 0.13 or tick.quotes[0]['bid_v'] * tick.quotes[0]['bid_p'] < context.kill_an_order) and tick.symbol in context.unfinished_orders:
-
+    if tick.quotes[0]['bid_v'] != 0 and tick.symbol in context.unfinished_orders:
+        if tick.symbol not in context.last_vol.keys():
+            context.last_vol[tick.symbol] = 0
+        if (tick.last_volume / (tick.last_volume + tick.quotes[0]['bid_v']) > 0.01 or
+                (tick.quotes[0]['bid_v'] * context.last_vol[tick.symbol]) -
+                (tick.quotes[0]['bid_v'] * tick.quotes[0]['bid_p']) < context.kill_an_order or
+                tick.last_amount > context.kill_an_order or
+                tick.quotes[0]['bid_v'] / context.last_vol[tick.symbol] < 0.95):
             order_cancel([i for i in get_unfinished_orders() if i['symbol'] == tick.symbol])
             context.instrument.loc[context.instrument['symbol'] == tick.symbol, 'deal'] += 1
-            
+
             log(level='info', msg='{}, 撤单了'.format(tick.symbol), source='strategy')
-            log(level='info', msg='大单砸：{}'.format(tick.last_volume / (tick.last_volume + tick.quotes[0]['bid_v'])), source='strategy')
-            log(level='info', msg='剩余封单：{}'.format(tick.quotes[0]['bid_v'] * tick.quotes[0]['bid_p']), source='strategy')
-    
+            log(level='info', msg='大单砸：{}'.format(tick.last_volume / (tick.last_volume + tick.quotes[0]['bid_v'])),
+                source='strategy')
+            log(level='info', msg='剩余封单：{}'.format(tick.quotes[0]['bid_v'] * tick.quotes[0]['bid_p']),
+                source='strategy')
+
+        context.last_vol[tick.symbol] = tick.quotes[0]['bid_v']
     # except:
     #     log(level='info', msg='小问题，已跳过', source='strategy')
 
@@ -231,11 +254,18 @@ def on_parameter(context, parameter):
         set_parameter(key='frash_stock', value=context.frash_stock, min=0, max=1000, name='刷新股池', intro='刷新股池', group='刷新', readonly=False)
 
         context.stocks = []
-        frash_first_stock()
+        # frash_first_stock()
         context.stocks = Get_stock(context.stocks, context.black_stock)
+        # algo_1(context)
 
         log(level='info', msg='刷新股池', source='strategy')
+    
+    elif parameter['name'] == '瞬时成交占比' and parameter['value'] != context.proportion_amount:
 
+        context.proportion_amount = parameter['value'] 
+        set_parameter(key='proportion_amount', value=context.proportion_amount, min=0, max=1, name='瞬时成交占比', intro='调整占比', group='打板', readonly=False)
+        log(level='info', msg='瞬时成交占比修改为:{}'.format(context.proportion_amount), source='strategy')
+    
 
 def on_error(context, code, info):
     log(level='warning', msg='code:{}, info:{}'.format(code, info), source='strategy')

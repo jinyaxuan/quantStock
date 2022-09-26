@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="78bcf314-9857-4257-9e34-cbddbcc886c6" name="变更" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/sonarlint/issuestore/index.pb" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/sonarlint/issuestore/index.pb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/98c51805-e27e-11ec-aee9-d85ed3030df0/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/98c51805-e27e-11ec-aee9-d85ed3030df0/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bf502dcf-e27e-11ec-aee9-d85ed3030df0/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/bf502dcf-e27e-11ec-aee9-d85ed3030df0/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -122,6 +123,8 @@
       <workItem from="1654224140865" duration="328000" />
       <workItem from="1654224486948" duration="526000" />
       <workItem from="1654406868650" duration="76000" />
+      <workItem from="1654572441281" duration="648000" />
+      <workItem from="1654687108579" duration="719000" />
     </task>
     <task id="LOCAL-00001" summary="添加买卖记录">
       <created>1654222360789</created>
@@ -151,7 +154,14 @@
       <option name="project" value="LOCAL" />
       <updated>1654224516609</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="添加买卖记录">
+      <created>1654572464305</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1654572464305</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -162,7 +172,18 @@
     <option name="LAST_COMMIT_MESSAGE" value="添加买卖记录" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/dee13108-e719-11ec-bb87-d85ed3030df0/main.py</url>
+          <line>1</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/$main.coverage" NAME="main 覆盖结果" MODIFIED="1654224635784" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/8ae4ed0d-e259-11ec-bd1f-d85ed3030def" />
+    <SUITE FILE_PATH="coverage/$main.coverage" NAME="main 覆盖结果" MODIFIED="1654687141677" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/8ae4ed0d-e259-11ec-bd1f-d85ed3030def" />
   </component>
 </project>
